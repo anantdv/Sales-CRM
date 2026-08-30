@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sales_crm"
+version = "0.0.1"
+description = "Enterprise Sales CRM layer for Frappe/ERPNext"
+authors = [{ name = "BLC" }]
+requires-python = ">=3.10"
+dependencies = []
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["sales_crm*"]
