@@ -70,6 +70,41 @@ class SalesCRMTestCase(FrappeTestCase):
         activity.insert(ignore_permissions=True)
         self.assertEqual(frappe.db.get_value("CRM Opportunity", opp.name, "next_action"), "Send proposal")
 
+    def test_completed_activity_creates_follow_up_task(self):
+        opp = self.make_opportunity()
+        activity = frappe.new_doc("Sales Activity")
+        activity.activity_type = "Meeting"
+        activity.subject = "Follow-up creation test"
+        activity.activity_date = today()
+        activity.status = "Completed"
+        activity.crm_opportunity = opp.name
+        activity.follow_up_required = 1
+        activity.follow_up_date = add_days(today(), 2)
+        activity.next_action = "Prepare follow-up proposal"
+        activity.insert(ignore_permissions=True)
+        self.assertTrue(frappe.db.exists("Sales Task", {"sales_activity": activity.name}))
+
+    def test_deal_health_service_returns_status(self):
+        from sales_crm.services.deal_health import evaluate_deal_health
+
+        opp = self.make_opportunity()
+        result = evaluate_deal_health(opp)
+        self.assertIn(result["status"], ["Healthy", "Watch", "At Risk", "Critical"])
+        self.assertGreaterEqual(result["score"], 0)
+
+    def test_next_best_action_finds_overdue_task(self):
+        from sales_crm.services.next_best_action import get_next_actions
+
+        task = frappe.new_doc("Sales Task")
+        task.subject = "Overdue next action test"
+        task.task_type = "Follow-up"
+        task.status = "Open"
+        task.assigned_to = frappe.session.user
+        task.due_date = add_days(today(), -1)
+        task.insert(ignore_permissions=True)
+        actions = get_next_actions(user=frappe.session.user, limit=50)
+        self.assertTrue(any(row["record_type"] == "Sales Task" and row["record_name"] == task.name for row in actions))
+
     def test_lead_conversion_creates_opportunity(self):
         lead = frappe.new_doc("CRM Lead")
         lead.lead_name = "Conversion Test Lead"

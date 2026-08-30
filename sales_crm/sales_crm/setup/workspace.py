@@ -2,6 +2,7 @@ import frappe
 
 
 def create_workspace():
+    create_sales_workspace_page()
     name = "Sales CRM"
     workspace = frappe.get_doc("Workspace", name) if frappe.db.exists("Workspace", name) else frappe.new_doc("Workspace")
     workspace.title = name
@@ -29,6 +30,7 @@ def create_workspace():
 
 def workspace_links():
     return [
+        ("Sales Workspace", "Page", "sales-crm-workspace"),
         ("My Leads", "DocType", "CRM Lead"),
         ("My Opportunities", "DocType", "CRM Opportunity"),
         ("My Activities", "DocType", "Sales Activity"),
@@ -44,3 +46,14 @@ def workspace_links():
         ("Qualification Templates", "DocType", "CRM Qualification Template"),
         ("CRM Settings", "DocType", "CRM Settings"),
     ]
+
+
+def create_sales_workspace_page():
+    if frappe.db.exists("Page", "sales-crm-workspace"):
+        return
+    page = frappe.new_doc("Page")
+    page.page_name = "sales-crm-workspace"
+    page.title = "Sales Workspace"
+    page.module = "Sales CRM"
+    page.standard = "Yes"
+    page.insert(ignore_permissions=True)

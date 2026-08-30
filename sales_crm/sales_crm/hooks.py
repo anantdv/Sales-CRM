@@ -36,6 +36,10 @@ doc_events = {
         "validate": "sales_crm.services.activity.validate_activity",
         "on_update": "sales_crm.services.activity.update_linked_records",
     },
+    "Sales Task": {
+        "validate": "sales_crm.services.task.validate_task",
+        "on_update": "sales_crm.services.task.update_linked_records",
+    },
     "Quotation": {
         "on_submit": "sales_crm.services.erp_links.update_opportunity_from_quotation",
         "on_update_after_submit": "sales_crm.services.erp_links.update_opportunity_from_quotation",
@@ -44,6 +48,12 @@ doc_events = {
         "on_submit": "sales_crm.services.erp_links.update_opportunity_from_sales_order",
         "on_update_after_submit": "sales_crm.services.erp_links.update_opportunity_from_sales_order",
     },
+}
+
+scheduled_events = {
+    "daily": [
+        "sales_crm.services.deal_health.update_stale_opportunities",
+    ]
 }
 
 doctype_js = {

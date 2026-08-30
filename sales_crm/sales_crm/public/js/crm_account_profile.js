@@ -23,5 +23,23 @@ frappe.ui.form.on("CRM Account Profile", {
                 },
             });
         });
+        frm.add_custom_button(__("New Opportunity"), () => frappe.new_doc("CRM Opportunity", {
+            customer: frm.doc.customer,
+            crm_account_profile: frm.doc.name,
+            opportunity_owner: frm.doc.account_owner,
+        }), __("Actions"));
+        frm.add_custom_button(__("Log Activity"), () => frappe.new_doc("Sales Activity", {
+            customer: frm.doc.customer,
+            crm_account_profile: frm.doc.name,
+        }), __("Actions"));
+        frm.add_custom_button(__("Schedule Meeting"), () => frappe.new_doc("Sales Activity", {
+            activity_type: "Meeting",
+            customer: frm.doc.customer,
+            crm_account_profile: frm.doc.name,
+        }), __("Actions"));
+        frm.add_custom_button(__("Add Contact"), () => frappe.new_doc("CRM Contact Relationship", {
+            customer: frm.doc.customer,
+            crm_account_profile: frm.doc.name,
+        }), __("Actions"));
     },
 });

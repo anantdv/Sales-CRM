@@ -25,6 +25,7 @@ def ensure_module():
 
 def ensure_doctype(spec):
     if frappe.db.exists("DocType", spec["name"]):
+        ensure_missing_fields(spec)
         return
 
     doc = frappe.new_doc("DocType")
@@ -51,6 +52,20 @@ def ensure_doctype(spec):
             doc.append("permissions", perm)
 
     doc.insert(ignore_permissions=True)
+
+
+def ensure_missing_fields(spec):
+    existing = {row.fieldname for row in frappe.get_meta(spec["name"]).fields if row.fieldname}
+    doc = frappe.get_doc("DocType", spec["name"])
+    changed = False
+    for field_spec in spec["fields"]:
+        fieldname = field_spec.get("fieldname")
+        if fieldname and fieldname not in existing:
+            doc.append("fields", field_spec)
+            existing.add(fieldname)
+            changed = True
+    if changed:
+        doc.save(ignore_permissions=True)
 
 
 def sec(label):
@@ -104,6 +119,20 @@ def _doctype_specs():
                 sec("Activity"),
                 field("default_activity_duration", "Default Activity Duration", "Int", default=30),
                 field("auto_create_follow_up_task", "Auto Create Follow-up Task", "Check"),
+                sec("Sales Execution"),
+                field("stale_lead_days", "Stale Lead Days", "Int", default=14),
+                field("stage_age_warning_percent", "Stage Age Warning Percent", "Percent", default=80),
+                field("quote_expiry_warning_days", "Quote Expiry Warning Days", "Int", default=7),
+                field("expected_close_warning_days", "Expected Close Warning Days", "Int", default=7),
+                field("high_value_opportunity_threshold", "High Value Opportunity Threshold", "Currency", default=250000),
+                field("require_next_action_on_open_opportunity", "Require Next Action on Open Opportunity", "Check", default=1),
+                field("enable_next_best_action", "Enable Next Best Action", "Check", default=1),
+                field("enable_deal_health", "Enable Deal Health", "Check", default=1),
+                field("enable_sales_playbooks", "Enable Sales Playbooks", "Check", default=1),
+                field("activity_reminder_days", "Activity Reminder Days", "Int", default=1),
+                field("engagement_active_days", "Engagement Active Days", "Int", default=7),
+                field("engagement_moderate_days", "Engagement Moderate Days", "Int", default=30),
+                field("engagement_low_days", "Engagement Low Days", "Int", default=60),
             ],
         },
         {
@@ -122,6 +151,9 @@ def _doctype_specs():
                 field("allow_quotation", "Allow Quotation", "Check"),
                 field("color", "Color", "Color"),
                 field("active", "Active", "Check", default=1),
+                field("guidance_title", "Guidance Title", "Data"),
+                field("guidance_text", "Guidance Text", "Text"),
+                field("recommended_activities", "Recommended Activities", "Small Text"),
             ],
         },
         {
@@ -254,6 +286,12 @@ def _doctype_specs():
                 field("outstanding_receivable", "Outstanding Receivable", "Currency", read_only=1),
                 field("last_sales_date", "Last Sales Date", "Date", read_only=1),
                 field("last_activity_date", "Last Activity Date", "Date", read_only=1),
+                field("activities_last_30_days", "Activities Last 30 Days", "Int", read_only=1),
+                field("meetings_last_90_days", "Meetings Last 90 Days", "Int", read_only=1),
+                field("open_follow_ups", "Open Follow-ups", "Int", read_only=1),
+                field("active_opportunities", "Active Opportunities", "Int", read_only=1),
+                field("stale_opportunities", "Stale Opportunities", "Int", read_only=1),
+                field("engagement_status", "Engagement Status", "Select", options=options("Active", "Moderate", "Low", "Dormant"), read_only=1),
             ],
         },
         {
@@ -275,7 +313,7 @@ def _doctype_specs():
                 field("active", "Active", "Check", default=1),
             ],
         },
-    ] + opportunity_specs() + qualification_specs() + activity_specs()
+    ] + opportunity_specs() + qualification_specs() + playbook_specs() + activity_specs() + task_specs()
 
 
 def opportunity_specs():
@@ -354,11 +392,16 @@ def opportunity_specs():
                 field("last_activity_date", "Last Activity Date", "Date", read_only=1),
                 field("stale", "Stale", "Check", read_only=1),
                 field("risk_level", "Risk Level", "Select", options=options("Low", "Medium", "High", "Critical"), in_list_view=1),
+                field("deal_health_score", "Deal Health Score", "Percent", read_only=1),
+                field("deal_health_status", "Deal Health Status", "Select", options=options("Healthy", "Watch", "At Risk", "Critical"), read_only=1),
                 sec("Closure"),
                 field("won_date", "Won Date", "Date", read_only=1),
                 field("lost_date", "Lost Date", "Date", read_only=1),
                 field("lost_reason", "Lost Reason", "Small Text"),
                 field("competitor", "Competitor", "Data"),
+                field("competitor_price", "Competitor Price", "Currency"),
+                field("lessons_learned", "Lessons Learned", "Text"),
+                field("reopen_reason", "Reopen Reason", "Small Text"),
                 field("closure_notes", "Closure Notes", "Text"),
                 sec("ERP Linkage"),
                 field("quotation", "Quotation", "Link", options="Quotation"),
@@ -438,8 +481,102 @@ def qualification_specs():
     ]
 
 
+def playbook_specs():
+    return [
+        {
+            "name": "CRM Stage Checklist",
+            "autoname": "CRM-STAGE-CHECK-.#####",
+            "search_fields": "pipeline,stage,checklist_item",
+            "fields": [
+                field("pipeline", "Pipeline", "Link", options="CRM Pipeline", reqd=1, in_list_view=1),
+                field("stage", "Stage", "Data", reqd=1, in_list_view=1),
+                field("checklist_item", "Checklist Item", "Data", reqd=1, in_list_view=1),
+                field("mandatory", "Mandatory", "Check"),
+                field("sequence", "Sequence", "Int", in_list_view=1),
+                field("active", "Active", "Check", default=1),
+            ],
+        },
+        {
+            "name": "CRM Opportunity Checklist",
+            "autoname": "CRM-OPP-CHECK-.#####",
+            "search_fields": "opportunity,stage,checklist_item",
+            "fields": [
+                field("opportunity", "Opportunity", "Link", options="CRM Opportunity", reqd=1, in_list_view=1),
+                field("pipeline", "Pipeline", "Link", options="CRM Pipeline"),
+                field("stage", "Stage", "Data", in_list_view=1),
+                field("checklist_item", "Checklist Item", "Data", reqd=1, in_list_view=1),
+                field("mandatory", "Mandatory", "Check"),
+                field("completed", "Completed", "Check", in_list_view=1),
+                field("completed_on", "Completed On", "Datetime"),
+                field("completed_by", "Completed By", "Link", options="User"),
+            ],
+        },
+        {
+            "name": "CRM Playbook Question",
+            "istable": 1,
+            "fields": [
+                field("question", "Question", "Small Text", reqd=1, in_list_view=1),
+                field("category", "Category", "Data", in_list_view=1),
+                field("sequence", "Sequence", "Int", in_list_view=1),
+                field("mandatory", "Mandatory", "Check"),
+                field("guidance", "Guidance", "Small Text"),
+            ],
+        },
+        {
+            "name": "CRM Recommended Action",
+            "istable": 1,
+            "fields": [
+                field("action", "Action", "Small Text", reqd=1, in_list_view=1),
+                field("activity_type", "Activity Type", "Select", options=activity_types(), in_list_view=1),
+                field("sequence", "Sequence", "Int", in_list_view=1),
+                field("mandatory", "Mandatory", "Check"),
+            ],
+        },
+        {
+            "name": "CRM Sales Playbook",
+            "autoname": "field:playbook_name",
+            "title_field": "playbook_name",
+            "search_fields": "playbook_name,opportunity_type,pipeline,applicable_stage,industry",
+            "fields": [
+                field("playbook_name", "Playbook Name", reqd=1, unique=1, in_list_view=1),
+                field("active", "Active", "Check", default=1, in_list_view=1),
+                field("opportunity_type", "Opportunity Type", "Select", options=options("New Business", "Existing Customer", "Upsell", "Cross-sell", "Renewal", "Rental", "Managed Service", "Tender")),
+                field("pipeline", "Pipeline", "Link", options="CRM Pipeline", in_list_view=1),
+                field("applicable_stage", "Applicable Stage", "Data", in_list_view=1),
+                field("industry", "Industry", "Link", options="Industry Type"),
+                field("description", "Description", "Small Text"),
+                field("objectives", "Objectives", "Text"),
+                field("questions", "Questions", "Table", options="CRM Playbook Question"),
+                field("recommended_actions", "Recommended Actions", "Table", options="CRM Recommended Action"),
+                field("objection_handling", "Objection Handling", "Text"),
+                field("resources", "Resources", "Text"),
+            ],
+        },
+    ]
+
+
 def activity_specs():
     return [
+        {
+            "name": "CRM Meeting Participant",
+            "istable": 1,
+            "fields": [
+                field("contact", "Contact", "Link", options="Contact", in_list_view=1),
+                field("email", "Email", "Data", options="Email", in_list_view=1),
+                field("role", "Role", "Data"),
+                field("attendance_status", "Attendance Status", "Select", options=options("Invited", "Accepted", "Declined", "Attended", "No Show"), default="Invited", in_list_view=1),
+            ],
+        },
+        {
+            "name": "CRM Meeting Action Item",
+            "istable": 1,
+            "fields": [
+                field("action", "Action", "Small Text", reqd=1, in_list_view=1),
+                field("assigned_to", "Assigned To", "Link", options="User", in_list_view=1),
+                field("due_date", "Due Date", "Date", in_list_view=1),
+                field("status", "Status", "Select", options=options("Open", "In Progress", "Completed", "Cancelled"), default="Open"),
+            ],
+        },
         {
             "name": "Sales Activity",
             "autoname": "CRM-ACT-.YYYY.-.#####",
@@ -454,6 +591,8 @@ def activity_specs():
                 field("end_time", "End Time", "Time"),
                 field("duration_minutes", "Duration Minutes", "Int"),
                 field("status", "Status", "Select", options=options("Planned", "Completed", "Cancelled", "No Show"), default="Planned", in_list_view=1),
+                field("meeting_title", "Meeting Title", "Data"),
+                field("meeting_type", "Meeting Type", "Data"),
                 sec("Links"),
                 field("crm_lead", "CRM Lead", "Link", options="CRM Lead", in_list_view=1),
                 field("customer", "Customer", "Link", options="Customer"),
@@ -471,14 +610,55 @@ def activity_specs():
                 field("next_action", "Next Action", "Small Text"),
                 field("next_action_date", "Next Action Date", "Date", in_list_view=1),
                 sec("Meeting"),
+                field("participants", "Participants", "Table", options="CRM Meeting Participant"),
+                field("meeting_link", "Meeting Link", "Data", options="URL"),
                 field("location", "Location", "Data"),
                 field("meeting_mode", "Meeting Mode", "Select", options=options("Onsite", "Online", "Phone")),
+                field("agenda", "Agenda", "Text"),
+                field("meeting_notes", "Meeting Notes", "Text"),
+                field("decisions", "Decisions", "Text"),
+                field("action_items", "Action Items", "Table", options="CRM Meeting Action Item"),
+                sec("Customer Visit"),
+                field("customer_site", "Customer Site", "Data"),
+                field("visit_purpose", "Visit Purpose", "Small Text"),
+                field("visit_outcome", "Visit Outcome", "Small Text"),
                 sec("Follow-up"),
                 field("follow_up_required", "Follow-up Required", "Check"),
                 field("follow_up_date", "Follow-up Date", "Date"),
                 sec("Attachments / System"),
                 field("communication", "Communication", "Link", options="Communication"),
                 field("completed_on", "Completed On", "Datetime", read_only=1),
+            ],
+        }
+    ]
+
+
+def task_specs():
+    return [
+        {
+            "name": "Sales Task",
+            "autoname": "CRM-TASK-.YYYY.-.#####",
+            "title_field": "subject",
+            "search_fields": "subject,assigned_to,crm_lead,customer,crm_opportunity,status",
+            "fields": [
+                field("subject", "Subject", reqd=1, in_list_view=1),
+                field("task_type", "Task Type", "Select", options=activity_types(), default="Follow-up", in_list_view=1),
+                field("status", "Status", "Select", options=options("Open", "In Progress", "Completed", "Cancelled"), default="Open", in_list_view=1),
+                field("priority", "Priority", "Select", options=options("Low", "Medium", "High", "Urgent"), default="Medium", in_list_view=1),
+                field("assigned_to", "Assigned To", "Link", options="User", in_list_view=1),
+                field("due_date", "Due Date", "Date", in_list_view=1),
+                field("due_time", "Due Time", "Time"),
+                field("completed_on", "Completed On", "Datetime", read_only=1),
+                sec("Links"),
+                field("crm_lead", "CRM Lead", "Link", options="CRM Lead"),
+                field("customer", "Customer", "Link", options="Customer"),
+                field("contact", "Contact", "Link", options="Contact"),
+                field("crm_opportunity", "CRM Opportunity", "Link", options="CRM Opportunity"),
+                field("sales_activity", "Sales Activity", "Link", options="Sales Activity"),
+                sec("Details"),
+                field("description", "Description", "Text"),
+                field("outcome", "Outcome", "Text"),
+                field("next_step", "Next Step", "Small Text"),
             ],
         }
     ]
@@ -498,3 +678,7 @@ def relationship_strengths():
 
 def contact_roles():
     return options("Decision Maker", "Economic Buyer", "Champion", "Influencer", "Technical Evaluator", "Procurement", "Finance", "End User", "Gatekeeper", "Blocker", "Other")
+
+
+def activity_types():
+    return options("Call", "Email", "Meeting", "Customer Visit", "Demo", "Presentation", "Task", "Follow-up", "Proposal", "WhatsApp", "Internal", "Other")

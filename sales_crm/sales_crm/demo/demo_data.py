@@ -1,7 +1,7 @@
 import frappe
 from frappe.utils import add_days, today
 
-from sales_crm.setup.seed import create_default_pipeline, create_default_qualification_template
+from sales_crm.setup.seed import create_default_pipeline, create_default_playbooks, create_default_qualification_template, create_stage_checklists
 
 
 LEADS = [
@@ -33,9 +33,12 @@ def create_demo_data():
     create_default_pipeline()
     create_managed_services_pipeline()
     create_default_qualification_template()
+    create_stage_checklists()
+    create_default_playbooks()
     ensure_demo_leads()
     ensure_demo_accounts()
     ensure_demo_opportunities()
+    ensure_demo_tasks()
     frappe.db.commit()
     return "Sales CRM demo data created or updated."
 
@@ -182,6 +185,31 @@ def create_activities(opportunity, customer, idx):
         activity.next_action = "Prepare next step"
         activity.next_action_date = add_days(today(), idx)
         activity.insert(ignore_permissions=True)
+
+
+def ensure_demo_tasks():
+    opportunities = frappe.get_all("CRM Opportunity", fields=["name", "customer", "opportunity_owner"], limit_page_length=20)
+    for idx, opp in enumerate(opportunities, start=1):
+        for subject, days, status in [
+            ("Follow up on next commercial step", -2, "Open"),
+            ("Prepare meeting notes", 0, "Open"),
+            ("Confirm stakeholder availability", 5, "Open"),
+            ("Archive completed discovery actions", -7, "Completed"),
+        ]:
+            full_subject = f"{subject} - {opp.name}"
+            if frappe.db.exists("Sales Task", {"subject": full_subject}):
+                continue
+            task = frappe.new_doc("Sales Task")
+            task.subject = full_subject
+            task.task_type = "Follow-up"
+            task.priority = "Urgent" if days < 0 else "Medium"
+            task.status = status
+            task.assigned_to = opp.opportunity_owner or frappe.session.user
+            task.due_date = add_days(today(), days)
+            task.crm_opportunity = opp.name
+            task.customer = opp.customer
+            task.description = "Demo task for the Sales Workspace."
+            task.insert(ignore_permissions=True)
 
 
 def create_qualification(opportunity):

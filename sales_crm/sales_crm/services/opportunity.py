@@ -22,6 +22,9 @@ def before_validate(doc, method=None):
     calculate_values(doc)
     calculate_age_fields(doc)
     set_status_dates(doc)
+    from sales_crm.services.deal_health import apply_deal_health
+
+    apply_deal_health(doc)
 
 
 def validate_opportunity(doc, method=None):
@@ -122,6 +125,9 @@ def validate_stage_requirements(doc, stage):
     if stage.allow_quotation and not doc.customer:
         frappe.throw(_("Customer is required before quotation is allowed."))
 
+    if not doc.is_new() and stage.stage_type == "Open":
+        validate_mandatory_stage_checklist(doc)
+
 
 def validate_closed_status(doc, stage):
     if stage.stage_type == "Won":
@@ -140,6 +146,26 @@ def validate_stage_change(doc, previous):
         new_stage = get_stage(doc.pipeline, doc.stage)
         if old_stage and new_stage and new_stage.sequence > old_stage.sequence + 1:
             frappe.throw(_("Stage skipping is disabled for this pipeline."))
+
+
+def validate_mandatory_stage_checklist(doc):
+    mandatory = frappe.get_all(
+        "CRM Stage Checklist",
+        filters={"pipeline": doc.pipeline, "stage": doc.stage, "mandatory": 1, "active": 1},
+        pluck="checklist_item",
+    )
+    if not mandatory:
+        return
+    completed = set(
+        frappe.get_all(
+            "CRM Opportunity Checklist",
+            filters={"opportunity": doc.name, "stage": doc.stage, "completed": 1},
+            pluck="checklist_item",
+        )
+    )
+    missing = [item for item in mandatory if item not in completed]
+    if missing and doc.stage in ("Proposal", "Negotiation", "Commit"):
+        frappe.throw(_("Complete mandatory stage checklist items before advancing: {0}").format(", ".join(missing)))
 
 
 def create_stage_history(doc, previous):
