@@ -133,6 +133,10 @@ def _doctype_specs():
                 field("engagement_active_days", "Engagement Active Days", "Int", default=7),
                 field("engagement_moderate_days", "Engagement Moderate Days", "Int", default=30),
                 field("engagement_low_days", "Engagement Low Days", "Int", default=60),
+                sec("Management Command Center"),
+                field("pipeline_coverage_good_threshold", "Pipeline Coverage Good Threshold", "Float", default=3),
+                field("pipeline_coverage_watch_threshold", "Pipeline Coverage Watch Threshold", "Float", default=2),
+                field("enable_pipeline_snapshots", "Enable Pipeline Snapshots", "Check", default=1),
             ],
         },
         {
@@ -313,7 +317,7 @@ def _doctype_specs():
                 field("active", "Active", "Check", default=1),
             ],
         },
-    ] + opportunity_specs() + qualification_specs() + playbook_specs() + activity_specs() + task_specs()
+    ] + opportunity_specs() + qualification_specs() + playbook_specs() + activity_specs() + task_specs() + management_specs()
 
 
 def opportunity_specs():
@@ -379,6 +383,7 @@ def opportunity_specs():
                 field("expected_close_date", "Expected Close Date", "Date", in_list_view=1),
                 sec("Business Context"),
                 field("opportunity_type", "Opportunity Type", "Select", options=options("New Business", "Existing Customer", "Upsell", "Cross-sell", "Renewal", "Rental", "Managed Service", "Tender")),
+                field("forecast_category", "Forecast Category", "Select", options=options("Pipeline", "Best Case", "Commit", "Closed Won", "Omitted"), default="Pipeline", in_list_view=1),
                 field("source", "Source", "Link", options="Lead Source"),
                 field("business_need", "Business Need", "Text"),
                 field("proposed_solution", "Proposed Solution", "Text"),
@@ -659,6 +664,49 @@ def task_specs():
                 field("description", "Description", "Text"),
                 field("outcome", "Outcome", "Text"),
                 field("next_step", "Next Step", "Small Text"),
+            ],
+        }
+    ]
+
+
+def management_specs():
+    return [
+        {
+            "name": "CRM Sales Target",
+            "autoname": "CRM-TARGET-.YYYY.-.#####",
+            "title_field": "target_name",
+            "search_fields": "target_name,company,salesperson,territory",
+            "fields": [
+                field("target_name", "Target Name", reqd=1, in_list_view=1),
+                field("company", "Company", "Link", options="Company", in_list_view=1),
+                field("salesperson", "Salesperson", "Link", options="User", in_list_view=1),
+                field("sales_team", "Sales Team", "Link", options="Sales Team"),
+                field("territory", "Territory", "Link", options="Territory", in_list_view=1),
+                field("product_group", "Product Group", "Link", options="Item Group"),
+                field("from_date", "From Date", "Date", reqd=1, in_list_view=1),
+                field("to_date", "To Date", "Date", reqd=1, in_list_view=1),
+                field("target_amount", "Target Amount", "Currency", reqd=1, in_list_view=1),
+                field("currency", "Currency", "Link", options="Currency"),
+                field("active", "Active", "Check", default=1),
+            ],
+        },
+        {
+            "name": "CRM Pipeline Snapshot",
+            "autoname": "CRM-SNAP-.YYYY.-.#####",
+            "search_fields": "snapshot_date,company,pipeline,opportunity,owner,stage,status",
+            "fields": [
+                field("snapshot_date", "Snapshot Date", "Date", reqd=1, in_list_view=1),
+                field("company", "Company", "Link", options="Company", in_list_view=1),
+                field("pipeline", "Pipeline", "Link", options="CRM Pipeline", reqd=1, in_list_view=1),
+                field("opportunity", "Opportunity", "Link", options="CRM Opportunity", reqd=1, in_list_view=1),
+                field("owner", "Owner", "Link", options="User", in_list_view=1),
+                field("stage", "Stage", "Data", in_list_view=1),
+                field("probability", "Probability", "Percent"),
+                field("value", "Value", "Currency"),
+                field("weighted_value", "Weighted Value", "Currency"),
+                field("expected_close_date", "Expected Close Date", "Date"),
+                field("deal_health", "Deal Health", "Data"),
+                field("status", "Status", "Select", options=options("Open", "Won", "Lost", "On Hold"), in_list_view=1),
             ],
         }
     ]

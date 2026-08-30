@@ -105,6 +105,42 @@ class SalesCRMTestCase(FrappeTestCase):
         actions = get_next_actions(user=frappe.session.user, limit=50)
         self.assertTrue(any(row["record_type"] == "Sales Task" and row["record_name"] == task.name for row in actions))
 
+    def test_management_pipeline_aggregation(self):
+        from sales_crm.services.management_dashboard import get_pipeline_metrics
+
+        self.make_opportunity(opportunity_name="Management aggregation test", opportunity_value=5000)
+        metrics = get_pipeline_metrics({"from_date": today(), "to_date": add_days(today(), 30)})
+        self.assertTrue(metrics["by_stage"])
+
+    def test_management_forecast_calculation(self):
+        from sales_crm.services.management_dashboard import get_forecast_metrics
+
+        opp = self.make_opportunity(opportunity_name="Forecast test", opportunity_value=7000)
+        opp.forecast_category = "Commit"
+        opp.save(ignore_permissions=True)
+        forecast = get_forecast_metrics({"from_date": today(), "to_date": add_days(today(), 30)})
+        self.assertGreaterEqual(forecast["commit"], 7000)
+
+    def test_pipeline_snapshot_idempotent(self):
+        from sales_crm.services.pipeline_snapshot import create_daily_pipeline_snapshots
+
+        opp = self.make_opportunity(opportunity_name="Snapshot test", opportunity_value=3000)
+        create_daily_pipeline_snapshots()
+        create_daily_pipeline_snapshots()
+        count = frappe.db.count("CRM Pipeline Snapshot", {"opportunity": opp.name, "snapshot_date": today()})
+        self.assertEqual(count, 1)
+
+    def test_management_alerts_return_structured_records(self):
+        from sales_crm.services.management_alerts import get_management_alerts
+
+        opp = self.make_opportunity(opportunity_name="Alert test", opportunity_value=999999)
+        opp.expected_close_date = add_days(today(), -2)
+        opp.next_action = None
+        opp.save(ignore_permissions=True)
+        alerts = get_management_alerts({"from_date": add_days(today(), -30), "to_date": today()}, limit=10)
+        self.assertTrue(alerts)
+        self.assertIn("severity", alerts[0])
+
     def test_lead_conversion_creates_opportunity(self):
         lead = frappe.new_doc("CRM Lead")
         lead.lead_name = "Conversion Test Lead"

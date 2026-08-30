@@ -20,7 +20,7 @@ def after_install():
 
 
 def create_roles():
-    for role in ("CRM Sales User", "CRM Sales Manager", "CRM Administrator"):
+    for role in ("CRM Sales User", "CRM Sales Manager", "CRM Administrator", "CRM Sales Executive"):
         if not frappe.db.exists("Role", role):
             frappe.get_doc({"doctype": "Role", "role_name": role, "desk_access": 1}).insert(ignore_permissions=True)
 
@@ -43,6 +43,9 @@ def create_default_settings():
     settings.engagement_active_days = settings.engagement_active_days or 7
     settings.engagement_moderate_days = settings.engagement_moderate_days or 30
     settings.engagement_low_days = settings.engagement_low_days or 60
+    settings.pipeline_coverage_good_threshold = settings.pipeline_coverage_good_threshold or 3
+    settings.pipeline_coverage_watch_threshold = settings.pipeline_coverage_watch_threshold or 2
+    settings.enable_pipeline_snapshots = 1
     settings.enable_relationship_tracking = 1
     settings.enable_stage_history = 1
     settings.default_probability_from_stage = 1

@@ -15,6 +15,21 @@ LEADS = [
     ("Pacific Hospitality Group", "General Manager", 130000),
     ("Harbour Construction", "Finance Manager", 90000),
     ("Sepik Education Trust", "Administration Lead", 65000),
+    ("Madang Fisheries", "Operations Manager", 120000),
+    ("Gulf Energy", "Commercial Manager", 330000),
+    ("Port Moresby Retailers", "IT Manager", 160000),
+    ("Northern Provincial Health", "Procurement Lead", 240000),
+    ("Rabaul Shipping", "Fleet Manager", 185000),
+    ("Morobe Agribusiness", "General Manager", 140000),
+    ("Kokopo Resort Group", "Property Manager", 110000),
+    ("Central Schools Board", "ICT Coordinator", 90000),
+    ("Lae Industrial Supplies", "Finance Controller", 125000),
+    ("Milne Bay Tourism", "Operations Lead", 75000),
+    ("Hela Gas Services", "Infrastructure Lead", 280000),
+    ("Bougainville Trading", "Managing Director", 105000),
+    ("Enga Construction Authority", "Procurement Director", 360000),
+    ("Manus Marine Services", "Technical Manager", 98000),
+    ("Oro Coffee Exporters", "Systems Manager", 87000),
 ]
 
 OPPORTUNITIES = [
@@ -39,6 +54,7 @@ def create_demo_data():
     ensure_demo_accounts()
     ensure_demo_opportunities()
     ensure_demo_tasks()
+    ensure_demo_targets()
     frappe.db.commit()
     return "Sales CRM demo data created or updated."
 
@@ -111,7 +127,7 @@ def ensure_demo_leads():
 
 
 def ensure_demo_accounts():
-    for org, _, _ in LEADS[:5]:
+    for org, _, _ in LEADS[:15]:
         customer = ensure_customer(org)
         if not frappe.db.exists("CRM Account Profile", customer):
             profile = frappe.new_doc("CRM Account Profile")
@@ -151,6 +167,51 @@ def ensure_demo_opportunities():
         opp.next_action_date = add_days(today(), idx + 2)
         if item:
             opp.append("products", {"item_code": item, "qty": 1, "rate": value})
+        opp.insert(ignore_permissions=True)
+        create_activities(opp.name, customer, idx)
+        create_qualification(opp.name)
+    create_management_demo_opportunities(pipeline, item)
+
+
+def create_management_demo_opportunities(pipeline, item):
+    stages = ["Prospecting", "Qualification", "Discovery", "Solution Design", "Proposal", "Negotiation", "Commit"]
+    customers = [row[0] for row in LEADS]
+    for idx in range(9, 27):
+        customer_name = customers[idx % len(customers)]
+        name = f"{customer_name} - Management Demo Deal {idx}"
+        if frappe.db.exists("CRM Opportunity", {"opportunity_name": name}):
+            continue
+        customer = ensure_customer(customer_name)
+        opp = frappe.new_doc("CRM Opportunity")
+        opp.opportunity_name = name
+        opp.customer = customer
+        opp.crm_account_profile = customer if frappe.db.exists("CRM Account Profile", customer) else None
+        opp.lead = frappe.db.get_value("CRM Lead", {"organization_name": customer_name}, "name")
+        opp.opportunity_owner = frappe.session.user
+        opp.pipeline = pipeline
+        opp.stage = stages[idx % len(stages)]
+        opp.currency = "PGK" if frappe.db.exists("Currency", "PGK") else None
+        opp.opportunity_value = 75000 + idx * 28000
+        opp.expected_close_date = add_days(today(), -5 if idx % 6 == 0 else idx * 4)
+        opp.opportunity_type = ["New Business", "Upsell", "Cross-sell", "Renewal", "Managed Service"][idx % 5]
+        opp.forecast_category = ["Pipeline", "Best Case", "Commit"][idx % 3]
+        opp.business_need = "Management demo opportunity for pipeline, forecast, and risk analytics."
+        if idx % 5:
+            opp.next_action = "Management review follow-up"
+            opp.next_action_date = add_days(today(), idx % 9)
+        opp.risk_level = "Critical" if idx % 6 == 0 else "High" if idx % 4 == 0 else "Low"
+        opp.competitor = ["Competitor A", "Competitor B", "Competitor C", None][idx % 4]
+        if idx % 8 == 0:
+            opp.status = "Lost"
+            opp.stage = "Closed Lost"
+            opp.lost_reason = "Price"
+            opp.closure_notes = "Lost to lower commercial offer."
+        elif idx % 7 == 0:
+            opp.status = "Won"
+            opp.stage = "Closed Won"
+            opp.forecast_category = "Closed Won"
+        if item:
+            opp.append("products", {"item_code": item, "qty": 1, "rate": opp.opportunity_value})
         opp.insert(ignore_permissions=True)
         create_activities(opp.name, customer, idx)
         create_qualification(opp.name)
@@ -210,6 +271,21 @@ def ensure_demo_tasks():
             task.customer = opp.customer
             task.description = "Demo task for the Sales Workspace."
             task.insert(ignore_permissions=True)
+
+
+def ensure_demo_targets():
+    name = f"Demo Sales Target {frappe.session.user}"
+    if frappe.db.exists("CRM Sales Target", {"target_name": name}):
+        return
+    target = frappe.new_doc("CRM Sales Target")
+    target.target_name = name
+    target.salesperson = frappe.session.user
+    target.from_date = add_days(today(), -120)
+    target.to_date = add_days(today(), 120)
+    target.target_amount = 9000000
+    target.currency = "PGK" if frappe.db.exists("Currency", "PGK") else None
+    target.active = 1
+    target.insert(ignore_permissions=True)
 
 
 def create_qualification(opportunity):

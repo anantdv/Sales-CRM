@@ -53,6 +53,7 @@ doc_events = {
 scheduled_events = {
     "daily": [
         "sales_crm.services.deal_health.update_stale_opportunities",
+        "sales_crm.services.pipeline_snapshot.create_daily_pipeline_snapshots",
     ]
 }
 
