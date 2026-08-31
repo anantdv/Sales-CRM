@@ -2,8 +2,8 @@ import frappe
 
 
 def create_workspace():
-    create_sales_workspace_page()
-    create_management_command_center_page()
+    sales_workspace_page = create_sales_workspace_page()
+    management_command_center_page = create_management_command_center_page()
     name = "Sales CRM"
     workspace = frappe.get_doc("Workspace", name) if frappe.db.exists("Workspace", name) else frappe.new_doc("Workspace")
     workspace.title = name
@@ -14,7 +14,7 @@ def create_workspace():
     workspace.icon = "crm"
 
     workspace.set("links", [])
-    for label, link_type, link_to in workspace_links():
+    for label, link_type, link_to in workspace_links(sales_workspace_page, management_command_center_page):
         workspace.append(
             "links",
             {
@@ -29,10 +29,10 @@ def create_workspace():
     workspace.save(ignore_permissions=True)
 
 
-def workspace_links():
+def workspace_links(sales_workspace_page, management_command_center_page):
     return [
-        ("Sales Workspace", "Page", "sales-crm-workspace"),
-        ("Sales Management Command Center", "Page", "sales-management-command-center"),
+        ("Sales Workspace", "Page", sales_workspace_page),
+        ("Sales Management Command Center", "Page", management_command_center_page),
         ("My Leads", "DocType", "CRM Lead"),
         ("My Opportunities", "DocType", "CRM Opportunity"),
         ("My Activities", "DocType", "Sales Activity"),
@@ -51,24 +51,26 @@ def workspace_links():
 
 
 def create_sales_workspace_page():
-    if frappe.db.exists("Page", "sales-crm-workspace"):
-        return
-    page = frappe.new_doc("Page")
-    page.name = "sales-crm-workspace"
-    page.page_name = "sales-crm-workspace"
-    page.title = "Sales Workspace"
-    page.module = "Sales CRM"
-    page.standard = "Yes"
-    page.insert(ignore_permissions=True)
+    return create_page("sales-crm-workspace", "Sales Workspace")
 
 
 def create_management_command_center_page():
-    if frappe.db.exists("Page", "sales-management-command-center"):
-        return
+    return create_page("sales-management-command-center", "Sales Management Command Center")
+
+
+def create_page(page_name, title):
+    existing = frappe.db.exists("Page", page_name)
+    if existing:
+        return existing
+
+    existing = frappe.db.get_value("Page", {"page_name": page_name}, "name")
+    if existing:
+        return existing
+
     page = frappe.new_doc("Page")
-    page.name = "sales-management-command-center"
-    page.page_name = "sales-management-command-center"
-    page.title = "Sales Management Command Center"
+    page.page_name = page_name
+    page.title = title
     page.module = "Sales CRM"
     page.standard = "Yes"
     page.insert(ignore_permissions=True)
+    return page.name
