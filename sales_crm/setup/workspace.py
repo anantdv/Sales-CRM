@@ -14,12 +14,13 @@ def create_workspace():
     workspace.icon = "crm"
 
     workspace.set("links", [])
-    for label, link_type, link_to in workspace_links(sales_workspace_page, management_command_center_page):
+    for label, target_type, link_to in workspace_links(sales_workspace_page, management_command_center_page):
         workspace.append(
             "links",
             {
                 "label": label,
-                "type": link_type,
+                "type": "Link",
+                "link_type": target_type,
                 "link_to": link_to,
                 "hidden": 0,
                 "onboard": 0,
