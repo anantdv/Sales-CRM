@@ -492,7 +492,7 @@ def get_sales_target(filters, salesperson=None):
         target_filters["territory"] = filters.territory
     if filters.get("product_group"):
         target_filters["product_group"] = filters.product_group
-    return frappe.db.get_value("CRM Sales Target", target_filters, "sum(target_amount)") or 0
+    return sum(row.target_amount or 0 for row in frappe.get_all("CRM Sales Target", filters=target_filters, fields=["target_amount"], limit_page_length=1000))
 
 
 def sum_field(doctype, fieldname, filters, extra=None):
@@ -500,7 +500,7 @@ def sum_field(doctype, fieldname, filters, extra=None):
     for key, column in {"company": "company", "pipeline": "pipeline", "salesperson": "opportunity_owner", "territory": "territory", "opportunity_type": "opportunity_type"}.items():
         if filters.get(key):
             query_filters[column] = filters.get(key)
-    return frappe.db.get_value(doctype, query_filters, f"sum({fieldname})") or 0
+    return sum(row.get(fieldname) or 0 for row in frappe.get_all(doctype, filters=query_filters, fields=[fieldname], limit_page_length=1000))
 
 
 def count_opps(filters, extra):

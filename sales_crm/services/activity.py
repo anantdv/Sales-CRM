@@ -66,7 +66,7 @@ def update_account_profile(doc):
 def get_engagement_summary(customer):
     from frappe.utils import add_days, date_diff, getdate
 
-    last_activity = frappe.db.get_value("Sales Activity", {"customer": customer}, "max(activity_date)")
+    last_activity = frappe.db.get_value("Sales Activity", {"customer": customer}, "activity_date", order_by="activity_date desc")
     settings = frappe.get_single("CRM Settings")
     if last_activity and date_diff(today(), getdate(last_activity)) <= (settings.engagement_active_days or 7):
         status = "Active"
