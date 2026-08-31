@@ -54,6 +54,7 @@ def create_sales_workspace_page():
     if frappe.db.exists("Page", "sales-crm-workspace"):
         return
     page = frappe.new_doc("Page")
+    page.name = "sales-crm-workspace"
     page.page_name = "sales-crm-workspace"
     page.title = "Sales Workspace"
     page.module = "Sales CRM"
@@ -65,6 +66,7 @@ def create_management_command_center_page():
     if frappe.db.exists("Page", "sales-management-command-center"):
         return
     page = frappe.new_doc("Page")
+    page.name = "sales-management-command-center"
     page.page_name = "sales-management-command-center"
     page.title = "Sales Management Command Center"
     page.module = "Sales CRM"
