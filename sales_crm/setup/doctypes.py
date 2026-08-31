@@ -1,3 +1,5 @@
+import re
+
 import frappe
 
 
@@ -74,7 +76,7 @@ def ensure_missing_fields(spec):
 
 
 def sec(label):
-    return {"fieldtype": "Section Break", "label": label}
+    return {"fieldtype": "Section Break", "label": label, "fieldname": f"{safe_fieldname(label)}_section"}
 
 
 def col():
@@ -89,6 +91,12 @@ def field(fieldname, label, fieldtype="Data", **kwargs):
 
 def options(*values):
     return "\n".join(values)
+
+
+def safe_fieldname(value):
+    value = re.sub(r"[^a-zA-Z0-9_]+", "_", value.strip().lower())
+    value = re.sub(r"_+", "_", value).strip("_")
+    return value or "section"
 
 
 def _doctype_specs():
