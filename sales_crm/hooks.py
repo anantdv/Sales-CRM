@@ -6,6 +6,7 @@ app_email = "admin@example.com"
 app_license = "MIT"
 
 after_install = "sales_crm.install.after_install"
+after_migrate = "sales_crm.install.after_migrate"
 
 app_include_js = []
 app_include_css = []

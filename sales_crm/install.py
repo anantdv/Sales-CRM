@@ -19,6 +19,16 @@ def after_install():
     create_workspace()
 
 
+def after_migrate():
+    create_roles()
+    create_doctypes()
+    create_custom_erp_fields()
+    create_default_settings()
+    create_stage_checklists()
+    create_default_playbooks()
+    create_workspace()
+
+
 def create_roles():
     for role in ("CRM Sales User", "CRM Sales Manager", "CRM Administrator", "CRM Sales Executive"):
         if not frappe.db.exists("Role", role):

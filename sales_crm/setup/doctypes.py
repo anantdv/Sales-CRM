@@ -11,9 +11,14 @@ ROLE_PERMS = [
 
 def create_doctypes():
     ensure_module()
-    for spec in _doctype_specs():
-        ensure_doctype(spec)
-    frappe.clear_cache()
+    previous_in_patch = getattr(frappe.flags, "in_patch", False)
+    frappe.flags.in_patch = True
+    try:
+        for spec in _doctype_specs():
+            ensure_doctype(spec)
+        frappe.clear_cache()
+    finally:
+        frappe.flags.in_patch = previous_in_patch
 
 
 def ensure_module():
