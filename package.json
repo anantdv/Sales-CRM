@@ -1,0 +1,10 @@
+{
+  "name": "sales_crm",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "build": "node -e \"process.exit(0)\""
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

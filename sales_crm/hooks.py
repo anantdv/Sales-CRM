@@ -7,6 +7,11 @@ app_license = "MIT"
 
 after_install = "sales_crm.install.after_install"
 
+app_include_js = []
+app_include_css = []
+web_include_js = []
+web_include_css = []
+
 fixtures = [
     {"dt": "Custom Field", "filters": [["module", "=", "Sales CRM"]]},
 ]
