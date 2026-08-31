@@ -1,7 +1,7 @@
 from setuptools import find_packages, setup
 
 
-with open("sales_crm/README.md") as f:
+with open("README.md") as f:
     long_description = f.read()
 
 
@@ -13,8 +13,7 @@ setup(
     long_description_content_type="text/markdown",
     author="BLC",
     author_email="admin@example.com",
-    packages=find_packages(where="sales_crm"),
-    package_dir={"": "sales_crm"},
+    packages=find_packages(),
     include_package_data=True,
     zip_safe=False,
     install_requires=[],
