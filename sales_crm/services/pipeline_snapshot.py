@@ -20,7 +20,7 @@ def create_daily_pipeline_snapshots():
         doc.company = row.company
         doc.pipeline = row.pipeline
         doc.opportunity = row.name
-        doc.owner = row.opportunity_owner
+        doc.snapshot_owner = row.opportunity_owner
         doc.stage = row.stage
         doc.probability = row.probability
         doc.value = row.opportunity_value

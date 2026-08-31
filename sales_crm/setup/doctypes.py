@@ -706,13 +706,13 @@ def management_specs():
         {
             "name": "CRM Pipeline Snapshot",
             "autoname": "CRM-SNAP-.YYYY.-.#####",
-            "search_fields": "snapshot_date,company,pipeline,opportunity,owner,stage,status",
+            "search_fields": "snapshot_date,company,pipeline,opportunity,snapshot_owner,stage,status",
             "fields": [
                 field("snapshot_date", "Snapshot Date", "Date", reqd=1, in_list_view=1),
                 field("company", "Company", "Link", options="Company", in_list_view=1),
                 field("pipeline", "Pipeline", "Link", options="CRM Pipeline", reqd=1, in_list_view=1),
                 field("opportunity", "Opportunity", "Link", options="CRM Opportunity", reqd=1, in_list_view=1),
-                field("owner", "Owner", "Link", options="User", in_list_view=1),
+                field("snapshot_owner", "Owner", "Link", options="User", in_list_view=1),
                 field("stage", "Stage", "Data", in_list_view=1),
                 field("probability", "Probability", "Percent"),
                 field("value", "Value", "Currency"),
