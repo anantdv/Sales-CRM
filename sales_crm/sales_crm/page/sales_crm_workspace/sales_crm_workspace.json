@@ -1,0 +1,10 @@
+{
+ "doctype": "Page",
+ "module": "Sales CRM",
+ "name": "sales-crm-workspace",
+ "page_name": "sales-crm-workspace",
+ "roles": [],
+ "standard": "Yes",
+ "system_page": 0,
+ "title": "Sales Workspace"
+}

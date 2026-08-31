@@ -1,0 +1,10 @@
+{
+ "doctype": "Page",
+ "module": "Sales CRM",
+ "name": "sales-management-command-center",
+ "page_name": "sales-management-command-center",
+ "roles": [],
+ "standard": "Yes",
+ "system_page": 0,
+ "title": "Sales Management Command Center"
+}

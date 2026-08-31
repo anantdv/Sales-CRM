@@ -26,6 +26,7 @@ def create_workspace():
             },
         )
 
+    workspace.flags.ignore_links = True
     workspace.save(ignore_permissions=True)
 
 
@@ -67,10 +68,4 @@ def create_page(page_name, title):
     if existing:
         return existing
 
-    page = frappe.new_doc("Page")
-    page.page_name = page_name
-    page.title = title
-    page.module = "Sales CRM"
-    page.standard = "Yes"
-    page.insert(ignore_permissions=True)
-    return page.name
+    return page_name
