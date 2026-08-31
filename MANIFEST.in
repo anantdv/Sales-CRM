@@ -1,0 +1,2 @@
+recursive-include sales_crm/sales_crm *.json *.js *.css *.html *.md *.py *.txt
+include sales_crm/README.md
